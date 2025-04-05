@@ -2,21 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hackthenest_music/providers/recording_provider.dart';
 
-class RecordButton extends ConsumerWidget {
+class RecordButton extends ConsumerStatefulWidget {
   const RecordButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecordButton> createState() => _RecordButtonState();
+}
+
+class _RecordButtonState extends ConsumerState<RecordButton> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isRecording = ref.watch(recordingProvider).isRecording;
     const outerCircleSize = 75.0;
     const innerCircleSize = 50.0;
 
+    Future<bool> showSaveDialog() async {
+      bool? result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Name Sample"),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  TextField(
+                    controller: _controller,
+                  ),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Done'),
+                onPressed: () {
+                  Navigator.of(context).pop(true); // Return true when done
+                },
+              ),
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context)
+                      .pop(false); // Return false when cancelled
+                },
+              ),
+            ],
+          );
+        },
+      );
+      return result ?? false; // Return false if the dialog is dismissed
+    }
+
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isRecording) {
-          ref.read(recordingProvider.notifier).stopRecording();
+          final filePath =
+              await ref.read(recordingProvider.notifier).stopRecording();
+
+          final result = await showSaveDialog();
+
+          if (result && _controller.text.isNotEmpty) {
+            await ref
+                .read(recordingProvider.notifier)
+                .setName(filePath!, _controller.text);
+          } else {
+            await ref
+                .read(recordingProvider.notifier)
+                .setName(filePath!, "New Sample");
+          }
         } else {
-          ref.read(recordingProvider.notifier).startRecording();
+          await ref.read(recordingProvider.notifier).startRecording();
         }
       },
       child: Padding(
@@ -56,105 +119,3 @@ class RecordButton extends ConsumerWidget {
     );
   }
 }
-
-
-// class RecordButton extends StatefulWidget {
-//   RecordButton({super.key, required this.isRecording});
-//   bool isRecording;
-//   @override
-//   State<RecordButton> createState() => _RecordButtonState();
-// }
-
-// class _RecordButtonState extends State<RecordButton> {
-//   @override
-//   Widget build(BuildContext context) {
-//     // Size screenSize = MediaQuery.of(context).size;
-//     // Calculate the dimensions for your widget based on the screen size
-//     double scaleRatio = 1;
-//     double outerCircleSize = 75 * scaleRatio; // Adjust as needed
-//     double innerCircleSize = 46 * scaleRatio; // Adjust as needed
-//     return widget.isRecording
-//         //Currently Recording
-//         ? Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: GestureDetector(
-//               child: SizedBox(
-//                 width: outerCircleSize,
-//                 height: outerCircleSize,
-//                 child: Stack(
-//                   children: [
-//                     Positioned(
-//                       left: 0,
-//                       top: 0,
-//                       child: Container(
-//                         width: 75,
-//                         height: 75,
-//                         decoration:
-//                             BoxDecoration(color: Colors.white.withOpacity(0)),
-//                       ),
-//                     ),
-//                     Positioned(
-//                       left: 24,
-//                       top: 24,
-//                       child: Container(
-//                         width: 27,
-//                         height: 27,
-//                         decoration: ShapeDecoration(
-//                           color: const Color(0xFFFF0000),
-//                           shape: RoundedRectangleBorder(
-//                               borderRadius: BorderRadius.circular(3)),
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               onTap: () {
-                
-//                 recordingProvider.stopRecording();
-//               },
-//             ),
-//           )
-//         //Not Recording
-//         : Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: GestureDetector(
-//               child: SizedBox(
-//                 width: outerCircleSize,
-//                 height: outerCircleSize,
-//                 child: Stack(
-//                   children: [
-//                     Positioned(
-//                       left: (outerCircleSize - innerCircleSize) / 2,
-//                       top: (outerCircleSize - innerCircleSize) / 2,
-//                       child: Container(
-//                         width: innerCircleSize,
-//                         height: innerCircleSize,
-//                         decoration: const ShapeDecoration(
-//                           color: Color(0xFFFF0000),
-//                           shape: OvalBorder(),
-//                         ),
-//                       ),
-//                     ),
-//                     Positioned(
-//                       left: 0,
-//                       top: 0,
-//                       child: Container(
-//                         width: outerCircleSize,
-//                         height: outerCircleSize,
-//                         decoration: const ShapeDecoration(
-//                           color: Color(0x47FF0000),
-//                           shape: OvalBorder(),
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               onTap: () {
-//                 recordingProvider.startRecording();
-//               },
-//             ),
-//           );
-//   }
-// }

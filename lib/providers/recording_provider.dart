@@ -1,80 +1,13 @@
-// import 'dart:developer';
-// import 'dart:io';
-
-// import 'package:flutter/material.dart';
-// import 'package:hackthenest_music/func/helper_functions.dart';
-// import 'package:hackthenest_music/permission_helper.dart';
-// import 'package:path_provider/path_provider.dart';
-
-// import 'package:record/record.dart';
-
-// class RecordingProvider with ChangeNotifier {
-//   bool isRecording = false;
-//   final record = AudioRecorder();
-// void startRecording() async {
-//   try {
-//     final granted = await PermissionHelper.requestStoragePermissions();
-
-//     if (!granted) return;
-
-//     if (await record.hasPermission() && isRecording == false) {
-//       // Start recording to file
-
-//       String date = DateTime.now().toString();
-//       setRecordingStaus(true);
-//       String randomFileName = HelperFunctions().getRandomString(5);
-
-//       // Get the external storage directory
-
-//       Directory? directory = await getExternalStorageDirectory();
-//       String? storagePath = directory?.path;
-
-//       // Construct the file path
-//       String filePath = '$storagePath/recordings/$date-$randomFileName.wav';
-//       Directory createDir = Directory('$storagePath/recordings/');
-//       if (!createDir.existsSync()) {
-//         createDir.createSync(recursive: true);
-//       }
-
-//       // await File(filePath).create();
-//       await record.start(const RecordConfig(encoder: AudioEncoder.wav),
-//           path: filePath);
-//       // ... or to stream
-//       // final stream = await record.startStream(const RecordConfig(AudioEncoder.pcm16bits));
-//     }
-//   } catch (e) {
-//     setRecordingStaus(false);
-//     log(e.toString());
-//   }
-// }
-
-//   void setRecordingStaus(bool value) {
-//     isRecording = value;
-//     notifyListeners();
-//   }
-
-//   void stopRecording() async {
-//     // Stop recording...
-//     try {
-//       final path = await record.stop();
-//       log(path!);
-//       setRecordingStaus(false);
-//       // record.dispose(); // As always, don't forget this one.
-//     } catch (e) {
-//       setRecordingStaus(false);
-//       log(e.toString());
-//     }
-//   }
-// }
-
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hackthenest_music/func/helper_functions.dart';
 import 'package:hackthenest_music/permission_helper.dart';
+import 'package:hackthenest_music/providers/sample_provider.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class RecordingState {
   final bool isRecording;
@@ -127,7 +60,7 @@ class RecordingNotifier extends Notifier<RecordingState> {
         Directory? directory = await getExternalStorageDirectory();
         String? storagePath = directory?.path;
 
-        String filePath = '$storagePath/recordings/$date-$randomFileName.m4a';
+        String filePath = '$storagePath/recordings/_$date-$randomFileName.m4a';
         Directory createDir = Directory('$storagePath/recordings/');
         if (!createDir.existsSync()) {
           createDir.createSync(recursive: true);
@@ -144,14 +77,52 @@ class RecordingNotifier extends Notifier<RecordingState> {
     }
   }
 
-  Future<void> stopRecording() async {
+  Future<void> setName(String fullPath, String newFileName) async {
+    String name = newFileName;
+
+    // Loop until doesFileExist returns true.
+    while ((await ref.read(samplesProvider.notifier).doesFileExist(name))) {
+      // Split the name into individual characters
+      List<String> newString = name.split("");
+
+      // Get the last character to check if it's a digit
+      String lastLetter = newString.last;
+      int? number = int.tryParse(lastLetter);
+
+      if (number == null) {
+        // If the last letter isn't a digit, append " 1"
+        name += " 1";
+      } else {
+        // Remove the last digit character
+        newString.removeLast();
+        // Append the incremented number (as a string)
+        name = "${newString.join()}${number + 1}";
+      }
+    }
+
+    final File currentSample = File(fullPath);
+
+    final String newPath = '${currentSample.parent.path}/$name.m4a';
+    try {
+      await currentSample.rename(newPath);
+      log('File renamed successfully to: $newPath');
+    } catch (e) {
+      log('Error renaming file: $e');
+    }
+
+    await ref.read(samplesProvider.notifier).getSamplesFromFile();
+  }
+
+  Future<String?> stopRecording() async {
     try {
       final path = await state.recorder.stop();
       log(path!);
       setRecordingStatus(false);
+      return path;
     } catch (e) {
       setRecordingStatus(false);
       log(e.toString());
     }
+    return null;
   }
 }

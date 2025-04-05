@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../sample.dart';
+import 'package:path/path.dart' as p;
 
 // State class to hold the samples data
 class SamplesState {
@@ -67,18 +68,28 @@ class SamplesNotifier extends Notifier<SamplesState> {
     return listOfFiles;
   }
 
+  Future<bool> doesFileExist(String path) async {
+    getSamplesFromFile();
+
+    List<Sample> newSamples = [...state.listOfSamples];
+
+    bool sampleExists = newSamples.any((sample) =>
+        p.basenameWithoutExtension(sample.path) ==
+        p.basenameWithoutExtension(path));
+    return sampleExists;
+  }
+
   Future<void> getSamplesFromFile() async {
     List<FileSystemEntity> listOfFiles = await getFiles();
     List<Sample> newSamples = [...state.listOfSamples];
 
     for (FileSystemEntity file in listOfFiles) {
       log("We got data");
-      List<String> fileString = file.path.split("/");
-      fileString = fileString[fileString.length - 1].split(".");
-      String fileName = fileString[1].split("-")[1];
+
+      String fileName = p.basenameWithoutExtension(file.path);
 
       final audioPlayer = AudioPlayer();
-
+      log("File exists");
       await audioPlayer.setFilePath(file.path);
       Duration? trackLength = audioPlayer.duration;
       if (trackLength == null) {
@@ -98,7 +109,8 @@ class SamplesNotifier extends Notifier<SamplesState> {
       // Check if sample already exists
       bool sampleExists =
           newSamples.any((sample) => sample.path == newSample.path);
-      if (!sampleExists) {
+      if (!sampleExists &&
+          p.basenameWithoutExtension(newSample.path).split("").first != "_") {
         newSamples.add(newSample);
       }
     }
