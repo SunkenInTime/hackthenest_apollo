@@ -68,6 +68,15 @@ class SamplesNotifier extends Notifier<SamplesState> {
     return listOfFiles;
   }
 
+  void createFolder(String folder) async {
+    final String path = "${state.samplesDirectory!}/$folder";
+    final Directory directory = Directory(path);
+
+    if (directory.existsSync()) return;
+
+    directory.createSync();
+  }
+
   Future<bool> doesFileExist(String path) async {
     getSamplesFromFile();
 
@@ -90,6 +99,8 @@ class SamplesNotifier extends Notifier<SamplesState> {
 
       final audioPlayer = AudioPlayer();
       log("File exists");
+      if (fileName.startsWith("_")) continue;
+
       await audioPlayer.setFilePath(file.path);
       Duration? trackLength = audioPlayer.duration;
       if (trackLength == null) {

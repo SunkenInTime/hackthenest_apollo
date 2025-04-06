@@ -12,19 +12,23 @@ import 'package:path/path.dart' as p;
 class RecordingState {
   final bool isRecording;
   final AudioRecorder recorder;
+  final bool isNoiseCanceling;
 
   RecordingState({
     required this.isRecording,
     required this.recorder,
+    required this.isNoiseCanceling,
   });
 
   RecordingState copyWith({
     bool? isRecording,
     AudioRecorder? recorder,
+    bool? isNoiseCanceling,
   }) {
     return RecordingState(
       isRecording: isRecording ?? this.isRecording,
       recorder: recorder ?? this.recorder,
+      isNoiseCanceling: isNoiseCanceling ?? this.isNoiseCanceling,
     );
   }
 }
@@ -39,6 +43,7 @@ class RecordingNotifier extends Notifier<RecordingState> {
     return RecordingState(
       isRecording: false,
       recorder: AudioRecorder(),
+      isNoiseCanceling: false,
     );
   }
 
@@ -67,7 +72,11 @@ class RecordingNotifier extends Notifier<RecordingState> {
         }
 
         await state.recorder.start(
-          const RecordConfig(encoder: AudioEncoder.aacHe),
+          RecordConfig(
+            encoder: AudioEncoder.aacHe,
+            noiseSuppress: state.isNoiseCanceling,
+            echoCancel: state.isNoiseCanceling,
+          ),
           path: filePath,
         );
       }
@@ -75,6 +84,10 @@ class RecordingNotifier extends Notifier<RecordingState> {
       setRecordingStatus(false);
       log(e.toString());
     }
+  }
+
+  void toggleNoiseCancellation() {
+    state = state.copyWith(isNoiseCanceling: !state.isNoiseCanceling);
   }
 
   Future<void> setName(String fullPath, String newFileName) async {
