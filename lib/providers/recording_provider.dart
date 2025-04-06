@@ -87,6 +87,7 @@ class RecordingNotifier extends Notifier<RecordingState> {
   }
 
   void toggleNoiseCancellation() {
+    if (state.isRecording) return;
     state = state.copyWith(isNoiseCanceling: !state.isNoiseCanceling);
   }
 

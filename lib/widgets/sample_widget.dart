@@ -131,7 +131,7 @@ class _SampleWidgetState extends ConsumerState<SampleWidget> {
                 builder: (context, snapshot) {
                   final position = snapshot.data ?? Duration.zero;
                   return Text(
-                    (snapshot.data == null)
+                    (snapshot.data == Duration.zero)
                         ? widget.currentSample.formatDuration()
                         : formatDuration(position),
                     style: TextStyle(
@@ -169,8 +169,8 @@ class _SampleWidgetState extends ConsumerState<SampleWidget> {
                     0.4, // Adjust this value to center vertically
                 child: SizedBox.shrink()),
             Positioned(
-              left: widget.sampleWidth * 0.4,
-              top: widget.sampleWidth * 0.35,
+              left: widget.sampleWidth * 0.076,
+              top: widget.sampleWidth * 0.4,
               child: Icon(
                 isPlaying
                     ? Icons.pause_circle_filled

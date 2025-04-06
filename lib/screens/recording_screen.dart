@@ -82,8 +82,16 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 200,
+                      height: 150,
                       child: wave_form.AnimatedWaveList(
+                        barBuilder: (animation, amplitude) =>
+                            wave_form.WaveFormBar(
+                          amplitude: amplitude,
+                          animation: animation,
+                          color: ref.watch(recordingProvider).isRecording
+                              ? Colors.red
+                              : Colors.grey,
+                        ),
                         stream: liveRecorder
                             .onAmplitudeChanged(
                               Duration(milliseconds: 5),
@@ -107,15 +115,35 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                     width: 50,
                   ),
                   RecordButton(),
-                  IconButton(
-                    isSelected: ref.watch(recordingProvider).isNoiseCanceling,
-                    onPressed: () {
-                      ref
-                          .read(recordingProvider.notifier)
-                          .toggleNoiseCancellation();
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
                     },
-                    icon: const Icon(Icons.noise_aware_rounded),
-                  ),
+                    child: IconButton(
+                      key: ValueKey(
+                          ref.watch(recordingProvider).isNoiseCanceling),
+                      selectedIcon: const Icon(
+                        Icons.noise_control_off,
+                        color: Colors.redAccent,
+                        size: 38,
+                      ),
+                      isSelected: ref.watch(recordingProvider).isNoiseCanceling,
+                      onPressed: () {
+                        ref
+                            .read(recordingProvider.notifier)
+                            .toggleNoiseCancellation();
+                      },
+                      icon: const Icon(
+                        Icons.noise_aware_rounded,
+                        size: 38,
+                      ),
+                    ),
+                  )
                 ],
               ),
             )

@@ -11,6 +11,7 @@ class RecordButton extends ConsumerStatefulWidget {
 
 class _RecordButtonState extends ConsumerState<RecordButton> {
   final _controller = TextEditingController();
+  final _animationDuration = const Duration(milliseconds: 300);
 
   @override
   void dispose() {
@@ -35,6 +36,7 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
               child: ListBody(
                 children: <Widget>[
                   TextField(
+                    decoration: InputDecoration(hintText: "New Sample"),
                     controller: _controller,
                   ),
                 ],
@@ -42,23 +44,22 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
             ),
             actions: <Widget>[
               TextButton(
-                child: const Text('Done'),
+                child: const Text('Cancel'),
                 onPressed: () {
-                  Navigator.of(context).pop(true); // Return true when done
+                  Navigator.of(context).pop(false);
                 },
               ),
               TextButton(
-                child: const Text('Cancel'),
+                child: const Text('Done'),
                 onPressed: () {
-                  Navigator.of(context)
-                      .pop(false); // Return false when cancelled
+                  Navigator.of(context).pop(true);
                 },
               ),
             ],
           );
         },
       );
-      return result ?? false; // Return false if the dialog is dismissed
+      return result ?? false;
     }
 
     return GestureDetector(
@@ -90,9 +91,11 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer circle (only visible when not recording)
-              if (!isRecording)
-                Container(
+              // Outer circle with animated opacity
+              AnimatedOpacity(
+                duration: _animationDuration,
+                opacity: isRecording ? 0.0 : 1.0,
+                child: Container(
                   width: outerCircleSize,
                   height: outerCircleSize,
                   decoration: const ShapeDecoration(
@@ -100,8 +103,10 @@ class _RecordButtonState extends ConsumerState<RecordButton> {
                     shape: OvalBorder(),
                   ),
                 ),
-              // Inner shape (circle when not recording, square when recording)
-              Container(
+              ),
+              // Inner shape with animated container
+              AnimatedContainer(
+                duration: _animationDuration,
                 width: innerCircleSize,
                 height: innerCircleSize,
                 decoration: ShapeDecoration(
